@@ -65,3 +65,13 @@ export const CreateAccountRoute = Route({
   },
 });
 ```
+
+## Features
+
+- [x] Create Turbo Server
+- [x] Automated scanning of Routes
+- [x] Custom Error and Success Responses
+- [x] Custom Cache mechanism support
+- [ ] Typebox Schema validation
+- [ ] Publish on NPM
+- [ ] Add documentation
