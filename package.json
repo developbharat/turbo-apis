@@ -1,0 +1,43 @@
+{
+  "name": "@developbharat/turbo",
+  "version": "1.0.0",
+  "description": "Framework for rapid and consistent API development",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "npx tsx watch src/index.ts",
+    "build": "rm -rf dist && tsc"
+  },
+  "keywords": [],
+  "author": {
+    "email": "care@developbharat.com",
+    "name": "Jayant Malik",
+    "url": "https://developbharat.com"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "arrowParens": "always",
+    "bracketSameLine": true,
+    "bracketSpacing": true,
+    "endOfLine": "lf",
+    "quoteProps": "consistent",
+    "proseWrap": "always",
+    "useTabs": false,
+    "tabWidth": 2,
+    "trailingComma": "all",
+    "singleQuote": false,
+    "semi": true
+  },
+  "engines": {
+    "node": ">=10.x"
+  },
+  "license": "GPL-3.0-only",
+  "dependencies": {
+    "@sinclair/typebox": "^0.32.19",
+    "trouter": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "typescript": "^5.4.3"
+  }
+}
