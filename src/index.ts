@@ -1,1 +1,8 @@
-export { turbo, Route, TurboException, TurboRequest, TurboResponse } from "./core/index.js";
+export {
+  BuildTurbo,
+  BuildRoute,
+  TurboException,
+  TurboRequest,
+  TurboResponse,
+  BuildRequestSchema as BuildSchema,
+} from "./core/index.js";

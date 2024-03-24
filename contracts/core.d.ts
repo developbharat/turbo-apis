@@ -18,12 +18,12 @@ declare namespace TurboCore {
 
   export type IHandleFunction = (req: TurboRequest, res: TurboResponse) => any | Promise<any>;
 
-  export interface ITurboRouteOptions {
-    method: IHTTPMethod;
-    pattern: string;
-    middlewares: TurboCore.IHandleFunction[];
-    handle: TurboCore.IHandleFunction;
-  }
+  type TProperties = import("@sinclair/typebox").TProperties;
+  type ITurboRequestSchema = {
+    headers: import("@sinclair/typebox").TObject;
+    params: import("@sinclair/typebox").TObject;
+    data: import("@sinclair/typebox").TObject;
+  };
 
   export interface ITurboSetInitialOptions {
     custom: TurboCustom;

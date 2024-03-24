@@ -14,7 +14,9 @@ export class TurboCustom {
 
   // TODO: replace logic with our error handler logic
   public onError(err: TurboException, res: TurboResponse): void {
-    res.setStatus(err.statusCode).json({ success: false, code: err.statusCode, status: err.message, data: null });
+    res
+      .setStatus(err.statusCode)
+      .end(JSON.stringify({ success: false, code: err.statusCode, status: err.message, data: null }));
   }
 
   // TODO: replace logic with our route found logic

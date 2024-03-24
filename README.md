@@ -7,10 +7,10 @@ Framework for rapid and consistent API development
 Inside your `src/index.ts` file put the following code:
 
 ```ts
-import { turbo } from "@developbharat/turbo";
+import { BuildTurbo } from "@developbharat/turbo";
 
 const main = async (): Promise<void> => {
-  const app = turbo();
+  const app = BuildTurbo();
 
   // scan for routes in src directory
   app.scanRoutes("src");
@@ -37,16 +37,16 @@ const main = async (): Promise<void> => {
   app.listen(4000, "0.0.0.0", () => {}, 512);
 };
 
-main.catch(console.error);
+main().catch(console.error);
 ```
 
 Now you can declare your route in `src/routes/CreateAccountRoute.ts` file
 
 ```ts
-import { TurboException, Route } from "@developbharat/turbo";
+import { TurboException, BuildRoute } from "@developbharat/turbo";
 import type { TurboRequest, TurboResponse } from "@developbharat/turbo";
 
-export const CreateAccountRoute = Route({
+export const CreateAccountRoute = BuildRoute({
   method: "GET",
   pattern: "/",
   middlewares: [
@@ -72,6 +72,7 @@ export const CreateAccountRoute = Route({
 - [x] Automated scanning of Routes
 - [x] Custom Error and Success Responses
 - [x] Custom Cache mechanism support
-- [ ] Typebox Schema validation
+- [x] Typebox Schema validation
 - [ ] Publish on NPM
 - [ ] Add documentation
+- [ ] Add typescript intellisense in Route
