@@ -6,8 +6,23 @@
   "type": "module",
   "scripts": {
     "dev": "npx tsx watch src/index.ts",
-    "build": "rm -rf dist && tsc"
+    "build": "rm -rf dist && tsc",
+    "test": "echo \"Will implement tests soon.\"",
+    "format": "prettier --write src"
   },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/*",
+    "LICENCE",
+    "README",
+    "CHANGELOG.md",
+    "package.json"
+  ],
   "keywords": [],
   "author": {
     "email": "care@developbharat.com",
@@ -38,6 +53,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.30",
+    "prettier": "^3.2.5",
     "typescript": "^5.4.3"
   }
 }

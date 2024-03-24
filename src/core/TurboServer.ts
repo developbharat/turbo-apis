@@ -1,10 +1,15 @@
+import { DefaultErrorFunction, SetErrorFunction } from "@sinclair/typebox/errors";
 import http from "http";
 import { Trouter as Router, type Methods } from "trouter";
 import { TurboCustom } from "./TurboCustom.js";
 import { TurboException } from "./TurboException.js";
 import { TurboRequest } from "./TurboRequest.js";
 import { TurboResponse } from "./TurboResponse.js";
-import { TurboRoute } from "./TurboRoute.js";
+import { TurboRoute, type IHTTPMethod, type IHandleFunction } from "./TurboRoute.js";
+
+export interface ITurboServerOptions {
+  server?: import("http").Server;
+}
 
 function lead(x: string) {
   return x.startsWith("/") ? x : "/" + x;
@@ -15,11 +20,23 @@ function value(x: string) {
   return y > 1 ? x.substring(0, y) : x;
 }
 
+// set custom error handler for typebox validator
+SetErrorFunction((ex) => {
+  console.log({ ex });
+  // Remove starting / from path and replace with dots(.)
+  ex.path = ex.path.startsWith("/") ? ex.path.slice(1) : ex.path;
+  ex.path = ex.path.split("/").join(".");
+
+  // Build meaningful error based on default exception message.
+  const exceptionText = DefaultErrorFunction(ex).toLowerCase();
+  return `${ex.path} is ${exceptionText} but found ${ex.value}`;
+});
+
 export class TurboServer extends Router<TurboRoute> {
-  public server: TurboCore.ITurboServerOptions["server"];
+  public server: ITurboServerOptions["server"];
   public custom: TurboCustom = new TurboCustom();
 
-  constructor(opts: TurboCore.ITurboServerOptions = {}) {
+  constructor(opts: ITurboServerOptions = {}) {
     super();
     this.server = opts.server;
     this.handler = this.handler.bind(this);
@@ -31,7 +48,7 @@ export class TurboServer extends Router<TurboRoute> {
     routes.forEach((route) => this.add(route.method, route.pattern, route));
   }
 
-  public add(method: TurboCore.IHTTPMethod, pattern: string, route: TurboRoute) {
+  public override add(method: IHTTPMethod, pattern: string, route: TurboRoute) {
     let base = lead(value(pattern));
 
     // raise exception if route with same pattern already exists.
@@ -75,11 +92,7 @@ export class TurboServer extends Router<TurboRoute> {
     return this;
   }
 
-  private async executeHandle(
-    req: TurboRequest,
-    res: TurboResponse,
-    handle: TurboCore.IHandleFunction,
-  ): Promise<boolean> {
+  private async executeHandle(req: TurboRequest, res: TurboResponse, handle: IHandleFunction): Promise<boolean> {
     // exit if res.end is already called.
     if (res.writableEnded) return false;
 
@@ -96,33 +109,41 @@ export class TurboServer extends Router<TurboRoute> {
   }
 
   private async handler(request: TurboRequest, response: TurboResponse): Promise<any> {
-    // parse url and set initial options for request and response.
-    const parsedUrl = this.custom.parse(request);
-    request["setInitialOptions"]({ custom: this.custom });
-    response["setInitialOptions"]({ custom: this.custom });
+    try {
+      // parse url and set initial options for request and response.
+      const parsedUrl = this.custom.parse(request);
+      response["setInitialOptions"]({ custom: this.custom });
 
-    // find turbo route for current request
-    const method = request.method?.toUpperCase() as Methods;
-    const { params, handlers } = this.find(method, parsedUrl.pathname);
+      // find turbo route for current request
+      const method = request.method?.toUpperCase() as Methods;
+      const { params, handlers } = this.find(method, parsedUrl.pathname);
 
-    // handle route not found case.
-    if (handlers.length !== 1) {
-      return this.custom.onError(new TurboException(404, `Route not found for path: ${parsedUrl.pathname}`), response);
+      // handle route not found case.
+      if (handlers.length !== 1) throw new TurboException(404, `Route not found for path: ${parsedUrl.pathname}`);
+
+      // We can have atmost 1 route per path, hence extract first route
+      const route = handlers.shift()!;
+
+      // Validate and sanitise Request data
+      if (!!route.schema) {
+        const data = await request["sanitiseAndValidate"](params, route.schema);
+        request["sanitisedData"] = data;
+      }
+
+      // invoke middlewares
+      for (let middleware of route.middlewares) {
+        const shallContinue = await this.executeHandle(request, response, middleware);
+        if (!shallContinue) return;
+      }
+
+      // execute request handle
+      await this.executeHandle(request, response, route.handle);
+    } catch (ex) {
+      const exception: TurboException =
+        ex instanceof TurboException ? ex : new TurboException(500, (ex as Error).message);
+      return this.custom.onError(exception, response);
     }
-
-    // prepare request for further processing
-    request.params = params;
-
-    // invoke middlewares
-    const route = handlers.shift()!;
-    for (let middleware of route.middlewares) {
-      const shallContinue = await this.executeHandle(request, response, middleware);
-      if (!shallContinue) return;
-    }
-
-    // execute request handle
-    await this.executeHandle(request, response, route.handle);
   }
 }
 
-export const turbo = (opts: TurboCore.ITurboServerOptions = {}) => new TurboServer(opts);
+export const BuildTurbo = (opts: ITurboServerOptions = {}) => new TurboServer(opts);
