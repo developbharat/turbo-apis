@@ -1,11 +1,17 @@
+import type { TurboRequest } from "./TurboRequest.js";
 import { TurboRequestSchema } from "./TurboRequestSchema.js";
+import type { TurboResponse } from "./TurboResponse.js";
+
+export type IHTTPMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS" | "CONNECT" | "TRACE";
+
+export type IHandleFunction = (req: TurboRequest, res: TurboResponse) => any | Promise<any>;
 
 export interface ITurboRouteOptions {
-  method: TurboCore.IHTTPMethod;
+  method: IHTTPMethod;
   pattern: string;
   schema?: TurboRequestSchema;
-  middlewares?: TurboCore.IHandleFunction[];
-  handle: TurboCore.IHandleFunction;
+  middlewares?: IHandleFunction[];
+  handle: IHandleFunction;
 }
 
 export class TurboRoute {
@@ -17,11 +23,11 @@ export class TurboRoute {
     this.handle = options.handle;
   }
 
-  public method: TurboCore.IHTTPMethod;
+  public method: IHTTPMethod;
   public pattern: string;
   public schema: TurboRequestSchema | undefined = undefined;
-  public middlewares: TurboCore.IHandleFunction[] = [];
-  public handle: TurboCore.IHandleFunction;
+  public middlewares: IHandleFunction[] = [];
+  public handle: IHandleFunction;
 }
 
 export const BuildRoute = (opts: ITurboRouteOptions) => new TurboRoute(opts);

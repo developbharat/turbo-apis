@@ -73,6 +73,6 @@ export const CreateAccountRoute = BuildRoute({
 - [x] Custom Error and Success Responses
 - [x] Custom Cache mechanism support
 - [x] Typebox Schema validation
-- [ ] Publish on NPM
+- [x] Publish on NPM
 - [ ] Add documentation
 - [ ] Add typescript intellisense in Route

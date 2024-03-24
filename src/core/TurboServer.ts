@@ -1,12 +1,15 @@
+import { DefaultErrorFunction, SetErrorFunction } from "@sinclair/typebox/errors";
 import http from "http";
 import { Trouter as Router, type Methods } from "trouter";
 import { TurboCustom } from "./TurboCustom.js";
 import { TurboException } from "./TurboException.js";
 import { TurboRequest } from "./TurboRequest.js";
 import { TurboResponse } from "./TurboResponse.js";
-import { TurboRoute } from "./TurboRoute.js";
-import type { ITurboRequestSchemaData } from "./TurboRequestSchema.js";
-import { DefaultErrorFunction, SetErrorFunction } from "@sinclair/typebox/errors";
+import { TurboRoute, type IHTTPMethod, type IHandleFunction } from "./TurboRoute.js";
+
+export interface ITurboServerOptions {
+  server?: import("http").Server;
+}
 
 function lead(x: string) {
   return x.startsWith("/") ? x : "/" + x;
@@ -30,10 +33,10 @@ SetErrorFunction((ex) => {
 });
 
 export class TurboServer extends Router<TurboRoute> {
-  public server: TurboCore.ITurboServerOptions["server"];
+  public server: ITurboServerOptions["server"];
   public custom: TurboCustom = new TurboCustom();
 
-  constructor(opts: TurboCore.ITurboServerOptions = {}) {
+  constructor(opts: ITurboServerOptions = {}) {
     super();
     this.server = opts.server;
     this.handler = this.handler.bind(this);
@@ -45,7 +48,7 @@ export class TurboServer extends Router<TurboRoute> {
     routes.forEach((route) => this.add(route.method, route.pattern, route));
   }
 
-  public add(method: TurboCore.IHTTPMethod, pattern: string, route: TurboRoute) {
+  public override add(method: IHTTPMethod, pattern: string, route: TurboRoute) {
     let base = lead(value(pattern));
 
     // raise exception if route with same pattern already exists.
@@ -89,11 +92,7 @@ export class TurboServer extends Router<TurboRoute> {
     return this;
   }
 
-  private async executeHandle(
-    req: TurboRequest,
-    res: TurboResponse,
-    handle: TurboCore.IHandleFunction,
-  ): Promise<boolean> {
+  private async executeHandle(req: TurboRequest, res: TurboResponse, handle: IHandleFunction): Promise<boolean> {
     // exit if res.end is already called.
     if (res.writableEnded) return false;
 
@@ -147,4 +146,4 @@ export class TurboServer extends Router<TurboRoute> {
   }
 }
 
-export const BuildTurbo = (opts: TurboCore.ITurboServerOptions = {}) => new TurboServer(opts);
+export const BuildTurbo = (opts: ITurboServerOptions = {}) => new TurboServer(opts);

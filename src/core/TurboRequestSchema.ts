@@ -1,7 +1,13 @@
-import { Type, type TProperties, type TSchema } from "@sinclair/typebox";
+import { Type, type TProperties, type TSchema, type TObject } from "@sinclair/typebox";
 import { TypeCompiler } from "@sinclair/typebox/compiler";
 import { Value } from "@sinclair/typebox/value";
 import { TurboException } from "./TurboException.js";
+
+export type ITurboRequestSchema = {
+  headers: TObject;
+  params: TObject;
+  data: TObject;
+};
 
 export interface IRouteSchemaOptions {
   headers?: TProperties;

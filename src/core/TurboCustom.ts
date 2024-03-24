@@ -5,8 +5,19 @@ import type { TurboRequest } from "./TurboRequest.js";
 import type { TurboResponse } from "./TurboResponse.js";
 import { TurboRoute } from "./TurboRoute.js";
 
+interface IParseUrlResult {
+  pathname: string;
+  search: string;
+  searchParams: URLSearchParams;
+}
+
+export interface ICacheOptions {
+  ttl: number;
+  name: string;
+}
+
 export class TurboCustom {
-  public parse(req: TurboRequest): TurboCore.IParseUrlResult {
+  public parse(req: TurboRequest): IParseUrlResult {
     const sampleUrl = req.url?.startsWith("/") ? "http://a.b" : "http://a.b/";
     const { pathname, search, searchParams } = new URL(sampleUrl + req.url);
     return { pathname, search, searchParams };
@@ -68,7 +79,7 @@ export class TurboCustom {
   }
 
   // todo: replace with inmemory cache logic by default
-  public async setCache(_data: any, _opts: TurboCore.ICacheOptions): Promise<void> {}
+  public async setCache(_data: any, _opts: ICacheOptions): Promise<void> {}
 
   // todo: replace with inmemory cache logic by default
   // will check cache with provided name and return data if found, null otherwise
