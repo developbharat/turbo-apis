@@ -7,8 +7,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-## 1.0.1 - 2024-03-24
 ### Added
+
+- Added default cache mechanism to in memory cache with automatic cleanup of expired keys at interval of 5 seconds.
+- Added datetime class and InMemoryCache class in utils
+
+## 1.0.1 - 2024-03-24
+
+### Added
+
 - Create Turbo Server
 - Automated scanning of Routes
 - Custom Error and Success Responses
