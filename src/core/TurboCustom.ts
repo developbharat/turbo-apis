@@ -1,5 +1,6 @@
 import fs from "fs/promises";
 import path from "path";
+import { MemCache } from "../utils/index.js";
 import type { TurboException } from "./TurboException.js";
 import type { TurboRequest } from "./TurboRequest.js";
 import type { TurboResponse } from "./TurboResponse.js";
@@ -23,14 +24,12 @@ export class TurboCustom {
     return { pathname, search, searchParams };
   }
 
-  // TODO: replace logic with our error handler logic
   public onError(err: TurboException, res: TurboResponse): void {
     res
       .setStatus(err.statusCode)
       .end(JSON.stringify({ success: false, code: err.statusCode, status: err.message, data: null }));
   }
 
-  // TODO: replace logic with our route found logic
   public onSuccess(res: TurboResponse, data: any): void {
     const statusCode = Number(res.useExtras<number>("code") || res.statusCode) || 200;
     const status = res.useExtras<string>("status") || "Request successful.";
@@ -45,7 +44,6 @@ export class TurboCustom {
     );
   }
 
-  // todo: replace with our scan for TurboRoutes logic.
   public async scanRoutes(dirpath: string): Promise<TurboRoute[]> {
     // Read all files recursively from provided directory with whitelisted extensions
     const dirItems = await fs.readdir(dirpath || ".", { encoding: "utf8", recursive: true, withFileTypes: true });
@@ -78,12 +76,11 @@ export class TurboCustom {
     return routes;
   }
 
-  // todo: replace with inmemory cache logic by default
-  public async setCache(_data: any, _opts: ICacheOptions): Promise<void> {}
+  public async setCache(data: any, opts: ICacheOptions): Promise<void> {
+    return MemCache.setCache(data, opts);
+  }
 
-  // todo: replace with inmemory cache logic by default
-  // will check cache with provided name and return data if found, null otherwise
-  public async checkCache(_name: string): Promise<any | null> {
-    return null;
+  public async checkCache<TResult = any>(name: string): Promise<TResult | null> {
+    return MemCache.checkCache(name);
   }
 }
