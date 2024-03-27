@@ -1,6 +1,6 @@
 {
   "name": "@developbharat/turbo",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Framework for rapid and consistent API development",
   "main": "dist/index.js",
   "type": "module",
