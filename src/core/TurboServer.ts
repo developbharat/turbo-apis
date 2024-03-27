@@ -1,7 +1,10 @@
 import { DefaultErrorFunction, SetErrorFunction } from "@sinclair/typebox/errors";
+import fs from "fs/promises";
 import http from "http";
+import path from "path";
 import { Trouter as Router, type Methods } from "trouter";
-import { TurboCustom } from "./TurboCustom.js";
+import { TurboContext } from "./TurboContext.js";
+import { TurboCustom, type ITurboCustom } from "./TurboCustom.js";
 import { TurboException } from "./TurboException.js";
 import { TurboRequest } from "./TurboRequest.js";
 import { TurboResponse } from "./TurboResponse.js";
@@ -34,7 +37,8 @@ SetErrorFunction((ex) => {
 
 export class TurboServer extends Router<TurboRoute> {
   public server: ITurboServerOptions["server"];
-  public custom: TurboCustom = new TurboCustom();
+  public custom: ITurboCustom = new TurboCustom();
+  private middlewares: IHandleFunction[] = [];
 
   constructor(opts: ITurboServerOptions = {}) {
     super();
@@ -44,7 +48,7 @@ export class TurboServer extends Router<TurboRoute> {
 
   public async scanRoutes(dirpath: string): Promise<void> {
     // scan and add each found route to our app
-    const routes = await this.custom.scanRoutes(dirpath);
+    const routes = await this.scanRoutesFromDirPath(dirpath);
     routes.forEach((route) => this.add(route.method, route.pattern, route));
   }
 
@@ -62,6 +66,11 @@ export class TurboServer extends Router<TurboRoute> {
 
     // add route to Trouter
     return super.add(method, pattern, route);
+  }
+
+  public middleware(func: IHandleFunction): TurboServer {
+    this.middlewares.push(func);
+    return this;
   }
 
   // TODO: expose this method to utilise your system resources
@@ -92,15 +101,52 @@ export class TurboServer extends Router<TurboRoute> {
     return this;
   }
 
-  private async executeHandle(req: TurboRequest, res: TurboResponse, handle: IHandleFunction): Promise<boolean> {
+  private async scanRoutesFromDirPath(dirpath: string): Promise<TurboRoute[]> {
+    // Read all files recursively from provided directory with whitelisted extensions
+    const dirItems = await fs.readdir(dirpath || ".", { encoding: "utf8", recursive: true, withFileTypes: true });
+
+    // Extract all Routes from scanned files inside specified directory.
+    let routes: TurboRoute[] = [];
+    for (let item of dirItems) {
+      // continue if file is not whitelisted.
+      const found =
+        item.name.endsWith(".ts") ||
+        item.name.endsWith(".js") ||
+        item.name.endsWith(".cjs") ||
+        item.name.endsWith(".mjs");
+      if (!found) continue;
+
+      // import TurboRoute from current file
+      const filepath = path.join(item.path, item.name);
+      const imported = await import(filepath);
+      // Print warning and continue for invalid Route
+      const routesFound = Object.values(imported).filter((item) => item instanceof TurboRoute) as TurboRoute[];
+      if (routesFound.length === 0) {
+        // console.warn(`${filepath} doesn't export a valid TurboRoute instance`);
+        continue;
+      }
+
+      // add each route to our app
+      routesFound.forEach((route) => routes.push(route));
+    }
+
+    return routes;
+  }
+
+  private async executeHandle(
+    req: TurboRequest,
+    res: TurboResponse,
+    context: TurboContext,
+    handle: IHandleFunction,
+  ): Promise<boolean> {
     // exit if res.end is already called.
     if (res.writableEnded) return false;
 
     try {
-      await handle(req, res);
+      await handle(req, res, context);
     } catch (ex) {
       ex = ex instanceof TurboException ? ex : new TurboException(500, ex.message);
-      this.custom.onError(ex, res);
+      this.custom.onError(ex, res, context);
       if (!res.writableEnded) res.end();
     }
 
@@ -108,11 +154,11 @@ export class TurboServer extends Router<TurboRoute> {
     return res.writableEnded ? false : true;
   }
 
-  private async handler(request: TurboRequest, response: TurboResponse): Promise<any> {
+  private async handler(request: TurboRequest, response: TurboResponse, context = new TurboContext()): Promise<any> {
     try {
       // parse url and set initial options for request and response.
       const parsedUrl = this.custom.parse(request);
-      response["setInitialOptions"]({ custom: this.custom });
+      response["setInitialOptions"]({ custom: this.custom, context: context });
 
       // find turbo route for current request
       const method = request.method?.toUpperCase() as Methods;
@@ -130,18 +176,24 @@ export class TurboServer extends Router<TurboRoute> {
         request["sanitisedData"] = data;
       }
 
-      // invoke middlewares
-      for (let middleware of route.middlewares) {
-        const shallContinue = await this.executeHandle(request, response, middleware);
+      // invoke global middlewares
+      for (const middleware of route.middlewares) {
+        const shallContinue = await this.executeHandle(request, response, context, middleware);
+        if (!shallContinue) return;
+      }
+
+      // invoke route middlewares
+      for (const middleware of route.middlewares) {
+        const shallContinue = await this.executeHandle(request, response, context, middleware);
         if (!shallContinue) return;
       }
 
       // execute request handle
-      await this.executeHandle(request, response, route.handle);
+      await this.executeHandle(request, response, context, route.handle);
     } catch (ex) {
       const exception: TurboException =
         ex instanceof TurboException ? ex : new TurboException(500, (ex as Error).message);
-      return this.custom.onError(exception, response);
+      return this.custom.onError(exception, response, context);
     }
   }
 }

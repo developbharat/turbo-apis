@@ -1,10 +1,11 @@
+import type { TurboContext } from "./TurboContext.js";
 import type { TurboRequest } from "./TurboRequest.js";
 import { TurboRequestSchema } from "./TurboRequestSchema.js";
 import type { TurboResponse } from "./TurboResponse.js";
 
 export type IHTTPMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE" | "HEAD" | "OPTIONS" | "CONNECT" | "TRACE";
 
-export type IHandleFunction = (req: TurboRequest, res: TurboResponse) => any | Promise<any>;
+export type IHandleFunction = (req: TurboRequest, res: TurboResponse, context: TurboContext) => any | Promise<any>;
 
 export interface ITurboRouteOptions {
   method: IHTTPMethod;
