@@ -35,6 +35,7 @@ SetErrorFunction((ex) => {
 export class TurboServer extends Router<TurboRoute> {
   public server: ITurboServerOptions["server"];
   public custom: TurboCustom = new TurboCustom();
+  private middlewares: IHandleFunction[] = [];
 
   constructor(opts: ITurboServerOptions = {}) {
     super();
@@ -62,6 +63,11 @@ export class TurboServer extends Router<TurboRoute> {
 
     // add route to Trouter
     return super.add(method, pattern, route);
+  }
+
+  public middleware(func: IHandleFunction): TurboServer {
+    this.middlewares.push(func);
+    return this;
   }
 
   // TODO: expose this method to utilise your system resources
@@ -130,8 +136,14 @@ export class TurboServer extends Router<TurboRoute> {
         request["sanitisedData"] = data;
       }
 
-      // invoke middlewares
-      for (let middleware of route.middlewares) {
+      // invoke global middlewares
+      for (const middleware of route.middlewares) {
+        const shallContinue = await this.executeHandle(request, response, middleware);
+        if (!shallContinue) return;
+      }
+
+      // invoke route middlewares
+      for (const middleware of route.middlewares) {
         const shallContinue = await this.executeHandle(request, response, middleware);
         if (!shallContinue) return;
       }
