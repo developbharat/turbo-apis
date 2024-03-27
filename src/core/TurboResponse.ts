@@ -1,25 +1,19 @@
 import { IncomingMessage, ServerResponse } from "http";
 import type { ICacheOptions, TurboCustom } from "./TurboCustom.js";
+import type { TurboContext } from "./TurboContext.js";
 
 export interface ITurboSetInitialOptions {
   custom: TurboCustom;
+  context: TurboContext;
 }
 
 export class TurboResponse<Request extends IncomingMessage = IncomingMessage> extends ServerResponse<Request> {
   private custom: TurboCustom | undefined = undefined;
-  private extras: Map<string, any> = new Map();
+  private context: TurboContext | undefined = undefined;
 
   protected setInitialOptions(options: ITurboSetInitialOptions) {
     this.custom = options.custom;
-  }
-
-  public setExtras<TValue = any>(name: string, value: TValue): TurboResponse {
-    this.extras.set(name, value);
-    return this;
-  }
-
-  public useExtras<TValue = any>(name: string): TValue | null {
-    return (this.extras.get(name) as TValue | undefined) || null;
+    this.context = options.context;
   }
 
   public setStatus(code: number, status: string = ""): TurboResponse {
@@ -30,7 +24,7 @@ export class TurboResponse<Request extends IncomingMessage = IncomingMessage> ex
 
   public json<TData = any>(data: TData): TurboResponse {
     this.setHeader("content-type", "application/json");
-    this.custom?.onSuccess(this, data);
+    this.custom?.onSuccess(this, this.context!, data);
     return this;
   }
 
